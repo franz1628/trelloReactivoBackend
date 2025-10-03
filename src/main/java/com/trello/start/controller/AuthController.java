@@ -1,5 +1,7 @@
 package com.trello.start.controller;
 
+import java.net.URI;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,6 +26,9 @@ public class AuthController {
 
     @PostMapping("/register")
     public Mono<ResponseEntity<UserDto>> register(@RequestBody RegisterRequest request) {
-        return service.register(request).map(ResponseEntity::ok);
+        return service.register(request)
+                  .map(userDto -> ResponseEntity
+                      .created(URI.create("/api/auth/" + userDto.getId()))
+                      .body(userDto));
     }
 }
