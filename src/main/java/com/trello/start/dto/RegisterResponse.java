@@ -1,5 +1,5 @@
 package com.trello.start.dto;
-
+import java.time.Instant;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,10 +12,9 @@ public class RegisterResponse {
     private String name;
     private String email;   
     private String username;
-    private String password;
     private String photo;
     private String state; 
     private String role; 
-    private String createdAt;
-    private String updatedAt;
+    private Instant createdAt;
+    private Instant updatedAt;
 }
