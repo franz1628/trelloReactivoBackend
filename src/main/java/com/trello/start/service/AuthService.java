@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 public class AuthService {
-    private UserRepository repository;
+    private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
 
     public AuthService(UserRepository repository, PasswordEncoder passwordEncoder){
