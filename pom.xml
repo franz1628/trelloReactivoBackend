@@ -11,7 +11,7 @@
 	<groupId>com.trello</groupId>
 	<artifactId>start</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 	<name>start</name>
 	<description>Demo project for Spring Boot</description>
 	<url/>
