@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.trello.start.dto.RegisterRequest;
+import com.trello.start.dto.RequestLogin;
+import com.trello.start.dto.ResponseLogin;
 import com.trello.start.dto.UserDto;
 import com.trello.start.service.AuthService;
 
@@ -30,5 +32,11 @@ public class AuthController {
                   .map(userDto -> ResponseEntity
                       .created(URI.create("/api/auth/" + userDto.getId()))
                       .body(userDto));
+    }
+
+    @PostMapping("/login")
+    public Mono<ResponseEntity<ResponseLogin>> login(@RequestBody RequestLogin request ){
+        return service.login(request)
+                .map(responseLogin -> ResponseEntity.ok(responseLogin));
     }
 }

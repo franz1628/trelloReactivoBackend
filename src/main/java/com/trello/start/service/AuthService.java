@@ -1,7 +1,10 @@
 package com.trello.start.service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.trello.start.config.JwtUtils;
 import com.trello.start.dto.RegisterRequest;
+import com.trello.start.dto.RequestLogin;
+import com.trello.start.dto.ResponseLogin;
 import com.trello.start.dto.UserDto;
 import com.trello.start.mapper.UserMapper;
 import com.trello.start.model.User;
@@ -12,10 +15,12 @@ import reactor.core.publisher.Mono;
 public class AuthService {
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtils jwtUtils;
 
-    public AuthService(UserRepository repository, PasswordEncoder passwordEncoder){
+    public AuthService(UserRepository repository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtils = jwtUtils;
     }
 
     public Mono<UserDto> register(RegisterRequest request) {
@@ -34,5 +39,23 @@ public class AuthService {
         
         Mono<UserDto> resModel = newModel.map(UserMapper.INSTANCE::toDto);
         return resModel;
+    }
+
+    public Mono<ResponseLogin> login(RequestLogin request) {
+        String password = request.getPassword();
+
+        return repository.findByEmail(request.getEmail().toLowerCase())
+            .switchIfEmpty(Mono.error(new IllegalArgumentException("User not found")))
+            .flatMap(user -> {
+                if (passwordEncoder.matches(password, user.getPassword())) {
+                    String token = jwtUtils.generateToken(user.getEmail());
+                    ResponseLogin response = new ResponseLogin();
+                    response.setToken(token);
+                    response.setUser(UserMapper.INSTANCE.toDto(user));
+                    return Mono.just(response);
+                } else {
+                    return Mono.error(new IllegalArgumentException("Invalid credentials"));
+                }
+            });
     }
 }
