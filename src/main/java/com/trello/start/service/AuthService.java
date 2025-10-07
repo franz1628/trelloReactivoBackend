@@ -6,6 +6,7 @@ import com.trello.start.dto.RegisterRequest;
 import com.trello.start.dto.RequestLogin;
 import com.trello.start.dto.ResponseLogin;
 import com.trello.start.dto.UserDto;
+import com.trello.start.exception.ResourceNotFoundException;
 import com.trello.start.mapper.UserMapper;
 import com.trello.start.model.User;
 import com.trello.start.repository.UserRepository;
@@ -45,7 +46,7 @@ public class AuthService {
         String password = request.getPassword();
 
         return repository.findByEmail(request.getEmail().toLowerCase())
-            .switchIfEmpty(Mono.error(new IllegalArgumentException("User not found")))
+            .switchIfEmpty(Mono.error(new ResourceNotFoundException("User not found")))
             .flatMap(user -> {
                 if (passwordEncoder.matches(password, user.getPassword())) {
                     String token = jwtUtils.generateToken(user.getEmail());
