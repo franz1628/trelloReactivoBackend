@@ -6,6 +6,7 @@ import com.trello.start.dto.RegisterRequest;
 import com.trello.start.dto.RequestLogin;
 import com.trello.start.dto.ResponseLogin;
 import com.trello.start.dto.UserDto;
+import com.trello.start.exception.DuplicateResourceException;
 import com.trello.start.exception.ResourceNotFoundException;
 import com.trello.start.mapper.UserMapper;
 import com.trello.start.model.User;
@@ -25,21 +26,26 @@ public class AuthService {
     }
 
     public Mono<UserDto> register(RegisterRequest request) {
-       if(request.getEmail() == null || request.getPassword() == null || request.getName() == null) {
-            throw new IllegalArgumentException("Email, password, and name must be provided");
+        if(request.getEmail() == null || request.getPassword() == null || request.getName() == null) {
+            return Mono.error(new IllegalArgumentException("Email, password, and name must be provided"));
         }
 
-        User entity = UserMapper.INSTANCE.toEntity(request);
-        entity.setName(request.getName().toLowerCase());
-        entity.setUsername(request.getUsername().toLowerCase());
-        entity.setEmail(request.getEmail().toLowerCase());
-        entity.setPassword(passwordEncoder.encode(request.getPassword()));
-        entity.setPhoto("");
+        return repository.existsByEmail(request.getEmail().toLowerCase()).flatMap(exists -> {
+            if(exists) {
+                return Mono.error(new DuplicateResourceException("Email already in use"));
+            }
+            User entity = UserMapper.INSTANCE.toEntity(request);
+            entity.setName(request.getName().toLowerCase());
+            entity.setUsername(request.getUsername().toLowerCase());
+            entity.setEmail(request.getEmail().toLowerCase());
+            entity.setPassword(passwordEncoder.encode(request.getPassword()));
+            entity.setPhoto("");
 
-        Mono<User> newModel = repository.save(entity);
-        
-        Mono<UserDto> resModel = newModel.map(UserMapper.INSTANCE::toDto);
-        return resModel;
+            Mono<User> newModel = repository.save(entity);
+            
+            Mono<UserDto> resModel = newModel.map(UserMapper.INSTANCE::toDto);
+            return resModel;
+        });
     }
 
     public Mono<ResponseLogin> login(RequestLogin request) {
@@ -55,7 +61,7 @@ public class AuthService {
                     response.setUser(UserMapper.INSTANCE.toDto(user));
                     return Mono.just(response);
                 } else {
-                    return Mono.error(new IllegalArgumentException("Invalid credentials"));
+                    return Mono.error(new IllegalAccessException("Invalid credentials"));
                 }
             });
     }
