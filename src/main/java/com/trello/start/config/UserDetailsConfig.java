@@ -12,7 +12,8 @@ import reactor.core.publisher.Mono;
 @Configuration
 public class UserDetailsConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    UserDetailsConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    
+    public UserDetailsConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
@@ -21,8 +22,9 @@ public class UserDetailsConfig {
         return http
             .csrf(ServerHttpSecurity.CsrfSpec::disable)
             .authorizeExchange(exchanges -> exchanges
-                .pathMatchers("/api/auth/register", "/api/auth/login").permitAll()
-                .anyExchange().authenticated()
+                .pathMatchers("/api/board/**").hasRole("ADMIN")
+                .pathMatchers("/api/users/me").authenticated()
+                .anyExchange().permitAll()
             )
             .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
             .exceptionHandling(ex -> ex
@@ -33,7 +35,6 @@ public class UserDetailsConfig {
                     Mono.fromRunnable(() -> exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN))
                 )
             )
-            
             .build();
     }
 

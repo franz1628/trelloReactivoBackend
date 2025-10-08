@@ -1,8 +1,8 @@
 package com.trello.start.config;
 
+import com.trello.start.model.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.security.Key;
@@ -20,11 +20,13 @@ public class JwtUtils {
         this.expirationTime = expirationTime;
     }
 
-    public String generateToken(String username) {
+    public String generateToken(User user) {
         return Jwts.builder()
-                .setSubject(username)
+                .setSubject(user.getUsername())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
+                .claim("role", user.getRole())
+                .claim("userId", user.getId())
                 .signWith(signingKey, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -36,6 +38,24 @@ public class JwtUtils {
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
+    }
+
+    public String extractRole(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role", String.class);
+    }
+
+    public String extractUserId(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(signingKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("userId", String.class);
     }
 
     public boolean validateToken(String token) {
