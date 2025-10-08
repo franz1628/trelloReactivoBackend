@@ -33,13 +33,25 @@ public class GlobalExceptionHandler {
         return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body));
     }
 
-    @ExceptionHandler(Exception.class)
-    public Mono<ResponseEntity<Map<String, Object>>> handleGenericError(Exception ex) {
+    @ExceptionHandler(IllegalAccessException.class)
+    public Mono<ResponseEntity<Map<String, Object>>> handleIllegalAccess(IllegalAccessException ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        body.put("error", "Internal Server Error");
+        body.put("status", HttpStatus.UNAUTHORIZED.value());
+        body.put("error", "Unauthorized");
         body.put("message", ex.getMessage());
-        return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body));
+        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body));
     }
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public Mono<ResponseEntity<Map<String, Object>>> handleDuplicateResource(DuplicateResourceException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.CONFLICT.value());
+        body.put("error", "Conflict");
+        body.put("message", ex.getMessage());
+        return Mono.just(ResponseEntity.status(HttpStatus.CONFLICT).body(body));
+    }
+
+
 }
