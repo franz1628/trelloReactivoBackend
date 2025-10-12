@@ -5,6 +5,9 @@ spring:
   data:
     mongodb:
       uri: 
+    redis:
+      host: 
+      port: 
   application:
     name: 
 

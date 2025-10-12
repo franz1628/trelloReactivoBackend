@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class ResponseLogin {
     String token;
     UserDto user;
+    long expirationTime;
 }
