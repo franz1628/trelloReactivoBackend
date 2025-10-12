@@ -9,8 +9,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
 import com.trello.start.config.JwtUtils;
+import com.trello.start.dto.RegisterRequest;
 import com.trello.start.model.User;
 import com.trello.start.repository.UserRepository;
 
@@ -36,9 +36,12 @@ class ProtectedRoutesIntegrationTest {
     void setup() {
         userRepository.deleteAll().block();
         User newUser = new User();
-        newUser.setId("1");
-        newUser.setRole("ADMIN");
-        newUser.setUsername("Franz");
+        var request = new RegisterRequest();
+        request.setEmail("gualambo@gmail.com");
+        request.setPassword("123456");
+        request.setName("Franz");
+        request.setUsername("Gualambo");
+
         User user = userRepository.save(newUser).block();
         validToken = jwtUtil.generateToken(user);
     }

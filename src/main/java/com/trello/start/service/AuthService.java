@@ -55,9 +55,9 @@ public class AuthService {
             .switchIfEmpty(Mono.error(new ResourceNotFoundException("User not found")))
             .flatMap(user -> {
                 if (passwordEncoder.matches(password, user.getPassword())) {
-                    String token = jwtUtils.generateToken(user);
                     ResponseLogin response = new ResponseLogin();
-                    response.setToken(token);
+                    response.setToken(jwtUtils.generateToken(user));
+                    response.setExpirationTime(jwtUtils.getExpirationTime());
                     response.setUser(UserMapper.INSTANCE.toDto(user));
                     return Mono.just(response);
                 } else {
