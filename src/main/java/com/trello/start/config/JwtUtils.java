@@ -31,6 +31,10 @@ public class JwtUtils {
                 .compact();
     }
 
+    public long getExpirationTime() {
+        return expirationTime;
+    }
+
     public String extractUsername(String token) {
         try {
             return Jwts.parserBuilder()

@@ -1,7 +1,8 @@
 package com.trello.start.security;
 
 import com.trello.start.config.JwtUtils;
-import org.springframework.http.HttpHeaders;
+import com.trello.start.service.TokenBlacklistService;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -12,17 +13,18 @@ import org.springframework.security.web.server.authentication.ServerAuthenticati
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-
 import java.util.Collections;
 
 @Component
 public class JwtAuthenticationFilter extends AuthenticationWebFilter {
 
     private final JwtUtils jwtUtils;
+    private final TokenBlacklistService blacklistService;
 
-    public JwtAuthenticationFilter(JwtUtils jwtUtils) {
+    public JwtAuthenticationFilter(JwtUtils jwtUtils, TokenBlacklistService blacklistService) {
         super(new JwtReactiveAuthenticationManager());
         this.jwtUtils = jwtUtils;
+        this.blacklistService = blacklistService;
 
         setServerAuthenticationConverter((ServerAuthenticationConverter) this::convert);
     }
@@ -35,40 +37,57 @@ public class JwtAuthenticationFilter extends AuthenticationWebFilter {
     }
 
     private Mono<Authentication> convert(ServerWebExchange exchange) {
-        String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        String token = extractJwtFromCookie(exchange.getRequest());
+        if (token == null) {
             return Mono.empty();
         }
-
-        String token = authHeader.substring(7);
         
         try {
             if (!jwtUtils.validateToken(token)) {
                 return Mono.empty(); 
             }
 
-            String username = jwtUtils.extractUsername(token);
-            String role = jwtUtils.extractRole(token);
-            String userId = jwtUtils.extractUserId(token);
+            return blacklistService.isTokenBlacklisted(token)
+                .flatMap(isBlacklisted -> {
+                    if (isBlacklisted) {
+                        return Mono.empty();
+                    }
 
-            if (username == null || role == null) {
-                return Mono.empty(); 
-            }
+                    String username = jwtUtils.extractUsername(token);
+                    String role = jwtUtils.extractRole(token);
+                    String userId = jwtUtils.extractUserId(token);
 
-            SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
-            User userDetails = new User(username, "", Collections.singletonList(authority));
+                    if (username == null || role == null) {
+                        return Mono.empty(); 
+                    }
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, Collections.singletonList(authority));
-            
-            if (userId != null) {
-                authentication.setDetails(userId);
-            }
+                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
+                    User userDetails = new User(username, "", Collections.singletonList(authority));
 
-            return Mono.just(authentication);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, Collections.singletonList(authority));
+                    
+                    if (userId != null) {
+                        authentication.setDetails(userId);
+                    }
+
+                    return Mono.just((Authentication) authentication);
+                })
+                .onErrorResume(error -> {
+                    System.err.println("Error checking token blacklist: " + error.getMessage());
+                    return Mono.empty();
+                });
             
         } catch (Exception e) {
             return Mono.empty();
         }
+    }
+
+    private String extractJwtFromCookie(ServerHttpRequest request) {
+        var cookie = request.getCookies().getFirst("auth_token");
+        if (cookie != null) {
+            return cookie.getValue();
+        }
+        return null;
     }
 }
