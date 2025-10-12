@@ -60,7 +60,7 @@ public class AuthController {
                 ? blacklistService.blacklistToken(jwtToken).then()
                 : Mono.empty();
 
-        ResponseCookie expiredCookie = cookieService.createAuthCookie("", 0);
+        ResponseCookie expiredCookie = cookieService.createExpiredCookie();
 
         return revocationMono.then(Mono.just(ResponseEntity.ok()
             .header(HttpHeaders.SET_COOKIE, expiredCookie.toString())
